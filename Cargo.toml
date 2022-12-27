@@ -1,0 +1,17 @@
+[package]
+name = "mydns"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+edition = "2021"
+name = "mydns"
+path = "src/main.rs"
+
+[dependencies]
+mdns = "3.0.0"
+mdns-sd = "0.5.9"
+async-std = "1.12.0"
+futures-util = "0.3.25"
