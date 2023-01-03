@@ -1,9 +1,12 @@
-use std::net::TcpListener;
+use std::{
+    io::Read,
+    net::{TcpListener, TcpStream},
+};
 
 use libmdns::Responder;
 
-const SERVICE_TYPE: &'static str = "_http._tcp";
-const SERVICE_NAME: &'static str = "My Service";
+const SERVICE_TYPE: &str = "_http._tcp";
+const SERVICE_NAME: &str = "My Service";
 const PORT: u16 = 5700;
 
 fn main() {
@@ -13,6 +16,7 @@ fn main() {
     let port = listener.local_addr().unwrap().port();
     println!("Listening on port {}", port);
 
+    // if the responder is dropped it will unregister the service
     let responder = Responder::new().unwrap();
     let _svc = responder.register(
         SERVICE_TYPE.to_owned(),
@@ -21,7 +25,17 @@ fn main() {
         &["path=/"],
     );
 
-    loop {
-        ::std::thread::sleep(::std::time::Duration::from_secs(10));
+    for stream in listener.incoming() {
+        let stream = stream.expect("Failed to connect");
+        read_stream(stream);
     }
+}
+
+fn read_stream(mut stream: TcpStream) {
+    let mut buffer = [0; 512];
+    stream
+        .read(&mut buffer)
+        .expect("Failed to read from stream");
+
+    println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
 }
