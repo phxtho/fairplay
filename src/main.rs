@@ -1,11 +1,12 @@
 use std::{
     io::Read,
     net::{TcpListener, TcpStream},
+    thread,
 };
 
 use libmdns::Responder;
 
-const SERVICE_TYPE: &str = "_http._tcp";
+const SERVICE_TYPE: &str = "_fairdrop._tcp";
 const SERVICE_NAME: &str = "My Service";
 const PORT: u16 = 5700;
 
@@ -24,18 +25,37 @@ fn main() {
         port,
         &["path=/"],
     );
+    println!(
+        "Registered {:?} with mdns responder under {:?}",
+        SERVICE_NAME, SERVICE_TYPE
+    );
 
-    for stream in listener.incoming() {
-        let stream = stream.expect("Failed to connect");
-        read_stream(stream);
+    // process incoming connections on a separate thread
+    thread::spawn(move || {
+        for stream in listener.incoming() {
+            let stream = stream.expect("Failed to connect");
+            handle_connection(stream);
+        }
+    });
+
+    loop {
+        thread::sleep(std::time::Duration::from_secs(1));
     }
 }
 
-fn read_stream(mut stream: TcpStream) {
-    let mut buffer = [0; 512];
+fn handle_connection(mut stream: TcpStream) {
+    // allocate a buffer to read data into
+    let mut buffer = [0; 1024];
+
+    // read data from stream to buffer
     stream
         .read(&mut buffer)
         .expect("Failed to read from stream");
 
-    println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
+    // parse the request
+    let mut headers = [httparse::EMPTY_HEADER; 16];
+    let mut req = httparse::Request::new(&mut headers);
+    let res = req.parse(&buffer).unwrap();
+
+    println!("Res: {:?}", res);
 }

@@ -13,3 +13,4 @@ path = "src/main.rs"
 [dependencies]
 mdns-sd = "0.5.9"
 libmdns = "0.7.3"
+httparse = "1.8.0"
