@@ -14,3 +14,7 @@ path = "src/main.rs"
 mdns-sd = "0.5.9"
 libmdns = "0.7.3"
 httparse = "1.8.0"
+hyper = {version = "1.0.0-rc.2", features = ["full"] }
+http-body-util = "0.1.0-rc.2" 
+tokio = { version = "1.24.1", features = ["full"] }
+
