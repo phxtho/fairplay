@@ -362,6 +362,7 @@ dependencies = [
 name = "mydns"
 version = "0.1.0"
 dependencies = [
+ "hostname",
  "http-body-util",
  "httparse",
  "hyper",
