@@ -45,20 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Spawn a tokio task to serve multiple connections concurrently
         tokio::task::spawn(async move {
             // Bind the incoming connection to our service
-            if let Err(err) = http1::Builder::new()
-                // `service_fn` converts our function in a `Service`
-                .serve_connection(stream, service_fn(hello))
-                .await
-            {
-                println!("Error serving connection: {:?}", err);
-            }
+            stream.try_write(buf)
         });
     }
-}
-
-async fn hello(_: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
-    Ok(Response::new(Full::new(Bytes::from(format!(
-        "Hello, from {}",
-        SERVICE_TYPE
-    )))))
 }
