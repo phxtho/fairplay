@@ -10,14 +10,6 @@ edition = "2021"
 name = "fairplay"
 path = "src/main.rs"
 
-[[bin]]
-name = "ws-server"
-path = "src/ws-server.rs"
-
-[[bin]]
-name = "ws-client"
-path = "src/ws-client.rs"
-
 [dependencies]
 mdns-sd = "0.5.9"
 libmdns = "0.7.3"

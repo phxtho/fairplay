@@ -1,47 +1,48 @@
-use std::net::SocketAddr;
-use tokio::{
-    io::AsyncWriteExt,
-    net::{TcpListener, TcpStream},
-};
-
 use hostname::get;
 use libmdns::Responder;
+use std::io::Write;
+use std::net::SocketAddr;
+use std::net::{TcpListener, TcpStream, UdpSocket};
 
 const SERVICE_TYPE: &str = "_fairplay._tcp";
-const PORT: u16 = 8080;
+const PORT: u16 = 8081;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
-    let listener = TcpListener::bind(addr).await?;
+    let listener = TcpListener::bind(addr).unwrap();
     println!("Listening on http://{}", addr);
 
     broadcast_service();
 
     // loop to continuously accept incoming connections
     loop {
-        let (stream, _) = listener.accept().await?;
-        println!(
-            "Accepted connection from: {:?}",
-            stream.peer_addr().unwrap()
-        );
-
-        capture(stream).await;
+        let result = listener.accept();
+        match result {
+            Ok((stream, _)) => {
+                println!("Accepted connection from: {:?}", stream.peer_addr());
+                capture(stream)
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        }
+        {}
     }
 }
 
-async fn capture(mut stream: TcpStream) {
+fn capture(mut stream: TcpStream) {
     use scrap::{Capturer, Display};
     use std::io::ErrorKind::WouldBlock;
     let d = Display::primary().unwrap();
-    let (w, h) = (d.width(), d.height());
 
     let mut capturer = Capturer::new(d).unwrap();
 
     loop {
         match capturer.frame() {
             Ok(frame) => {
-                stream.write_all(&frame).await.unwrap();
+                println!("frame.len() = {}", frame.len());
+                stream.write_all(&frame).expect("Failed to write to stream");
+                stream.flush().expect("Failed to flush stream");
             }
             Err(ref e) if e.kind() == WouldBlock => {
                 // Wait for the frame.
@@ -50,7 +51,7 @@ async fn capture(mut stream: TcpStream) {
                 // We're done here.
                 break;
             }
-        }
+        };
     }
 }
 
