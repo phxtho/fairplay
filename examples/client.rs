@@ -1,5 +1,6 @@
-use std::io::{BufReader, Read};
+use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
+use std::process::{Command, Stdio};
 
 use scrap::Display;
 
@@ -9,41 +10,36 @@ fn main() {
     let d = Display::primary().unwrap();
     let (w, h) = (d.width(), d.height());
 
-    // let child = Command::new("ffplay")
-    //     .args(&[
-    //         "-f",
-    //         "rawvideo",
-    //         "-pixel_format",
-    //         "bgr0",
-    //         "-video_size",
-    //         &format!("{}x{}", w, h),
-    //         "-framerate",
-    //         "60",
-    //         "-",
-    //     ])
-    //     .stdin(Stdio::piped())
-    //     .spawn()
-    //     .expect("This client requires ffplay.");
+    let child = Command::new("ffplay")
+        .args(&[
+            "-f",
+            "rawvideo",
+            "-pixel_format",
+            "bgr0",
+            "-video_size",
+            &format!("{}x{}", w, h),
+            "-framerate",
+            "60",
+            "-",
+        ])
+        .stdin(Stdio::piped())
+        .spawn()
+        .expect("This client requires ffplay.");
 
-    // let mut out = child.stdin.unwrap();
+    let mut out = child.stdin.unwrap();
 
-    let mut buffer: Vec<u8> = Vec::new();
+    let mut buffer: Vec<u8> = vec![0; 100000];
     let mut reader = BufReader::new(stream);
 
     loop {
         let result = reader.read(&mut buffer);
         match result {
             Ok(n) => {
-                println!("n = {} ", n);
-                println!("buffer.len() = {} ", buffer.len());
                 if n != 0 {
-                    let stride = n / h; // stride is the number bytes in a row
-                    let rowlen = 4 * w;
+                    let stride = n / h; // stride is th number of rows in a frame
                     for row in buffer.chunks(stride) {
-                        let row = &row[..rowlen];
-                        print!("{} ", row.len());
+                        out.write(row).expect("Failed to write to ffplay");
                     }
-                    buffer.clear();
                 }
             }
             Err(e) => {
