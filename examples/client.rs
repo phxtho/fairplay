@@ -28,18 +28,14 @@ fn main() {
 
     let mut out = child.stdin.unwrap();
 
-    let mut buffer: Vec<u8> = vec![0; 100000];
+    let mut buffer: Vec<u8> = vec![0; w * 4]; // buffer size is one row of pixels
     let mut reader = BufReader::new(stream);
-
     loop {
         let result = reader.read(&mut buffer);
         match result {
             Ok(n) => {
                 if n != 0 {
-                    let stride = n / h; // stride is th number of rows in a frame
-                    for row in buffer.chunks(stride) {
-                        out.write(row).expect("Failed to write to ffplay");
-                    }
+                    out.write(&buffer).expect("Failed to write to ffplay");
                 }
             }
             Err(e) => {
