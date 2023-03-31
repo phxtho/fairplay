@@ -1,15 +1,40 @@
+use mdns_sd::{ServiceDaemon, ServiceEvent};
 use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
 use std::process::{Command, Stdio};
 
-use scrap::Display;
-
 fn main() {
-    //make tcp connection
-    let stream = TcpStream::connect("127.0.0.1:8081").expect("Failed to connect to server");
-    let d = Display::primary().unwrap();
-    let (w, h) = (d.width(), d.height());
+    let mdns = ServiceDaemon::new().expect("Failed to create mdns daemon");
+    //browse for services
+    let service_type = "_fairplay._tcp.local."; // mdns_sd requires the full service type & it needs to end with a "."
+    let reveiver = mdns
+        .browse(service_type)
+        .expect("Failed to browse for services");
 
+    while let Ok(event) = reveiver.recv() {
+        match event {
+            ServiceEvent::ServiceResolved(info) => {
+                let address = info.get_addresses().iter().next().unwrap();
+                let port = info.get_port();
+                let properties = info.get_properties();
+                let w = properties["width"].parse::<usize>().unwrap();
+                let h = properties["height"].parse::<usize>().unwrap();
+
+                //make tcp connection
+                let stream = TcpStream::connect(format!("{}:{}", address, port))
+                    .expect("Failed to connect to server");
+
+                handle_connection(stream, w, h);
+            }
+            other_event => {
+                println!("Other event: {:?}", other_event)
+            }
+        }
+    }
+}
+
+fn handle_connection(stream: TcpStream, w: usize, h: usize) {
+    //spawn ffplay
     let child = Command::new("ffplay")
         .args(&[
             "-f",
