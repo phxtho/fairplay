@@ -3,7 +3,7 @@ use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
 use std::process::{Command, Stdio};
 
-fn main() {
+pub fn run() {
     let mdns = ServiceDaemon::new().expect("Failed to create mdns daemon");
     //browse for services
     let service_type = "_fairplay._tcp.local."; // mdns_sd requires the full service type & it needs to end with a "."
@@ -17,8 +17,18 @@ fn main() {
                 let address = info.get_addresses().iter().next().unwrap();
                 let port = info.get_port();
                 let properties = info.get_properties();
-                let w = properties["width"].parse::<usize>().unwrap();
-                let h = properties["height"].parse::<usize>().unwrap();
+
+                let w = properties
+                    .get_property_val_str("width")
+                    .unwrap()
+                    .parse::<usize>()
+                    .unwrap();
+
+                let h = properties
+                    .get_property_val_str("height")
+                    .unwrap()
+                    .parse::<usize>()
+                    .unwrap();
 
                 //make tcp connection
                 let stream = TcpStream::connect(format!("{}:{}", address, port))
