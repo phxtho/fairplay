@@ -60,15 +60,23 @@ pub fn run() {
 
 fn capture(mut stream: TcpStream) -> std::io::Result<()> {
     let d = Display::primary().unwrap();
+    let w = d.width();
+    let h = d.height();
     let mut capturer = Capturer::new(d).unwrap();
 
     loop {
         match capturer.frame() {
             Ok(frame) => {
-                stream.write_all(&frame).map_err(|e| {
-                    eprintln!("Failed to write to stream: {}", e);
-                    e
-                })?;
+                let stride = frame.len() / h;
+                let rowlen = 4 * w;
+                for row in frame.chunks_exact(stride) {
+                    // remove end padding
+                    let row = &row[..rowlen];
+                    stream.write_all(row).map_err(|e| {
+                        eprintln!("Failed to write to stream: {}", e);
+                        e
+                    })?;
+                }
             }
             Err(ref e) if e.kind() == WouldBlock => {
                 // Wait for the frame.
