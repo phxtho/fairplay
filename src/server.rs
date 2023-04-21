@@ -1,7 +1,8 @@
+use cfg_if::cfg_if;
 use libmdns::Responder;
-use scrap::{Capturer, Display};
+use scrap::{Capturer, Display, Frame};
 use std::io::ErrorKind::WouldBlock;
-use std::io::Write;
+use std::io::{Write, Result as IoResult};
 use std::net::SocketAddr;
 use std::net::{TcpListener, TcpStream};
 
@@ -58,7 +59,34 @@ pub fn run() {
     }
 }
 
-fn capture(mut stream: TcpStream) -> std::io::Result<()> {
+fn write_frame(
+    frame: Frame,
+    width: usize,
+    height: usize,
+    mut stream: &TcpStream,
+) -> IoResult<()> {
+    // removes end padding and writes to stream
+    cfg_if! {
+        if #[cfg(target_os = "macos")] {
+            // garbage bytes are at the end of the frame on m1 macs
+            let frame_size = 4 * width * height;
+            stream.write_all(&frame[..frame_size])?;
+            Ok(())
+        } else {
+            // garbage bytes are at the end of each row on linux
+            let stride = frame.len() / height;
+            let rowlen = 4 * width;
+
+            for row in frame.chunks_exact(stride){
+                let row = &row[..rowlen];
+                stream.write_all(row)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn capture(stream: TcpStream) -> IoResult<()> {
     let d = Display::primary().unwrap();
     let w = d.width();
     let h = d.height();
@@ -67,16 +95,10 @@ fn capture(mut stream: TcpStream) -> std::io::Result<()> {
     loop {
         match capturer.frame() {
             Ok(frame) => {
-                let stride = frame.len() / h;
-                let rowlen = 4 * w;
-                for row in frame.chunks_exact(stride) {
-                    // remove end padding
-                    let row = &row[..rowlen];
-                    stream.write_all(row).map_err(|e| {
-                        eprintln!("Failed to write to stream: {}", e);
-                        e
-                    })?;
-                }
+                write_frame(frame, w, h, &stream).map_err(|e| {
+                    eprintln!("Failed to write to stream: {}", e);
+                    e
+                })?;
             }
             Err(ref e) if e.kind() == WouldBlock => {
                 // Wait for the frame.

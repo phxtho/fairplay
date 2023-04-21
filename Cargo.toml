@@ -16,3 +16,4 @@ libmdns = "0.7.3"
 hostname = "^0.3"
 scrap = "0.5"
 clap = { version = "4.2.1", features = ["derive"] }
+cfg-if = "1.0.0"
