@@ -2,7 +2,7 @@ use cfg_if::cfg_if;
 use libmdns::Responder;
 use scrap::{Capturer, Display, Frame};
 use std::io::ErrorKind::WouldBlock;
-use std::io::{Write, Result as IoResult};
+use std::io::{Result as IoResult, Write};
 use std::net::SocketAddr;
 use std::net::{TcpListener, TcpStream};
 
@@ -59,13 +59,9 @@ pub fn run() {
     }
 }
 
-fn write_frame(
-    frame: Frame,
-    width: usize,
-    height: usize,
-    mut stream: &TcpStream,
-) -> IoResult<()> {
+fn write_frame(frame: Frame, width: usize, height: usize, mut stream: &TcpStream) -> IoResult<()> {
     // removes end padding and writes to stream
+    // https://github.com/quadrupleslap/scrap/issues/44#issuecomment-1486345836
     cfg_if! {
         if #[cfg(target_os = "macos")] {
             // garbage bytes are at the end of the frame on m1 macs

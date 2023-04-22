@@ -3,17 +3,7 @@ name = "fairplay"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[bin]]
-edition = "2021"
-name = "fairplay"
-path = "src/main.rs"
-
 [dependencies]
-mdns-sd = "0.7.2"
-libmdns = "0.7.3"
-hostname = "^0.3"
-scrap = "0.5"
+reciever = { path = "./src/reciever"}
+server = { path = "./src/server"}
 clap = { version = "4.2.1", features = ["derive"] }
-cfg-if = "1.0.0"

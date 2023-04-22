@@ -1,8 +1,5 @@
 use clap::{Parser, Subcommand};
 
-mod reciever;
-mod server;
-
 #[derive(Parser)]
 #[command(author, about, version)]
 struct Cli {
