@@ -6,11 +6,11 @@ Screensharing over a local network
 
 To broadcast on your network run
 ```sh
-fairplay server
+cargo run server
 ```
 To browse and stream a broadcast run
 ```sh
-fairplay receiver
+cargo run receiver
 ```
 
 # Dependencies
